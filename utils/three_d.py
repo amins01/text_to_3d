@@ -9,9 +9,9 @@ def generate_c2w(camera_radius, camera_position=None):
 
         # Convert spherical coordinates to cartesian
         camera_position = np.array([
-            camera_radius * np.sin(theta) * np.cos(phi),
-            camera_radius * np.sin(theta) * np.sin(phi),
-            camera_radius * np.cos(theta)
+            camera_radius * np.cos(theta) * np.sin(phi),
+            camera_radius * np.sin(theta),
+            camera_radius * np.cos(theta) * np.cos(phi)
         ])
 
     camera_look_at = np.array([0.0, 0.0, 0.0])

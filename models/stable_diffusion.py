@@ -51,15 +51,15 @@ class StableDiffusion(nn.Module):
         w = (1 - self.alphas[t]).view(batch_size, 1, 1, 1)
 
         # Duplicate for CFG
-        noisy_latents = torch.cat([noisy_latents] * 2)
-        t = torch.cat([t] * 2)
+        dup_noisy_latents = torch.cat([noisy_latents] * 2)
+        dup_t = torch.cat([t] * 2)
 
         # Expand the positive and negative prompts to match batch size and concatenate them
         embeddings = torch.cat([self.pos_prompt_embedding.expand(batch_size, -1, -1), self.neg_prompt_embedding.expand(batch_size, -1, -1)])
 
         with torch.no_grad():
             # Predict noise
-            noise_pred = self.pipe.unet(noisy_latents, t, encoder_hidden_states=embeddings).sample
+            noise_pred = self.pipe.unet(dup_noisy_latents, dup_t, encoder_hidden_states=embeddings).sample
 
         # Guidance (to increase prompt influence)
         noise_pred_cond, noise_pred_uncond = noise_pred.chunk(2)
@@ -69,7 +69,7 @@ class StableDiffusion(nn.Module):
         grad = w * (noise_pred - added_noise)
         target = (latents - grad).detach()
 
-        loss = F.mse_loss(latents.float(), target, reduction='mean')
+        loss = F.mse_loss(latents.float(), target, reduction='sum') / batch_size
         # loss = F.mse_loss(noise_pred, added_noise, reduction='mean')
 
         return loss
