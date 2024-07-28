@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,6 +14,8 @@ class StableDiffusion(nn.Module):
         self.pipe = StableDiffusionPipeline.from_pretrained(sd_model_key, torch_dtype=torch.float16).to(device)
         self.scheduler = DDIMScheduler.from_pretrained(sd_model_key, subfolder="scheduler")
         self.alphas = self.scheduler.alphas_cumprod.to(self.device)
+        self.min_timestep = np.round(self.scheduler.config.num_train_timesteps * 0.02)
+        self.max_timestep = np.round(self.scheduler.config.num_train_timesteps * 0.98)
 
     def encode_images(self, images):
         images = 2 * images - 1 # Normalize to [-1, 1]
@@ -31,7 +34,7 @@ class StableDiffusion(nn.Module):
         self.pos_prompt_embedding = self.encode_text(prompts)
         self.neg_prompt_embedding = self.encode_text(negative_prompts)
 
-    def train_step(self, images, guidance_scale=100):
+    def train_step(self, images, epoch, epochs, guidance_scale=100, timestep_annealing=True):
         images = torch.cat(images, dim=0).to(torch.float16)
         batch_size = images.shape[0]
 
@@ -41,8 +44,14 @@ class StableDiffusion(nn.Module):
         # Generate image latents
         latents = self.encode_images(images)
 
-        # Generate random timestep(s)
-        t = torch.randint(0, self.scheduler.config.num_train_timesteps, (batch_size,), dtype=torch.long, device=self.device)
+        # Generate timestep
+        if timestep_annealing:
+            # Timestep based on current epoch
+            timestep = np.round((1 - (epoch / epochs)) * self.scheduler.config.num_train_timesteps)
+            t = torch.full((batch_size,), timestep.clip(self.min_timestep, self.max_timestep), dtype=torch.long, device=self.device)
+        else:
+            # Random timestep
+            t = torch.randint(0, self.scheduler.config.num_train_timesteps, (batch_size,), dtype=torch.long, device=self.device)
 
         # Generate random gaussian noise
         noise = torch.randn_like(latents)

@@ -63,7 +63,7 @@ class Trainer:
         #     plt.show()
 
         # Calculate loss
-        loss = self.sd_model.train_step(images)
+        loss = self.sd_model.train_step(images, epoch, epochs)
 
         # Backpropagate
         loss.backward()
