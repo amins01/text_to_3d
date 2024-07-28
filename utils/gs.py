@@ -1,3 +1,4 @@
+import random
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -70,7 +71,6 @@ def generate_gs_images(renderer, camera_args, batch_size=1, ready_to_display=Fal
         # Generate random c2w matrix
         c2w = generate_c2w(camera_args.radius)
 
-        # TODO: Random black / white background
         rendered_output = renderer.render(
             viewpoint_camera=MiniCam(
                 c2w,
@@ -82,8 +82,9 @@ def generate_gs_images(renderer, camera_args, batch_size=1, ready_to_display=Fal
                 camera_args.zfar
             ),
             bg_color=torch.tensor(
-                data=[1, 1, 1],
-                dtype=torch.float32, device="cuda"
+                data=[1, 1, 1] if random.uniform(0, 1) < 0.5 else [0, 0, 0],
+                dtype=torch.float32,
+                device="cuda"
             )
         )
 
