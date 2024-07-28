@@ -35,6 +35,9 @@ class StableDiffusion(nn.Module):
         images = torch.cat(images, dim=0).to(torch.float16)
         batch_size = images.shape[0]
 
+        # Interpolate image to correct size for sd model
+        images = F.interpolate(images, (512, 512), mode="bilinear")
+
         # Generate image latents
         latents = self.encode_images(images)
 

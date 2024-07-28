@@ -96,12 +96,12 @@ def generate_gs_images(renderer, camera_args, batch_size=1, ready_to_display=Fal
 
     return rendered_images
 
-def generate_gs_360_animation(renderer, camera_args, camera_position=None, num_frames=360, fps=120, output_filename=None):
+def generate_gs_360_animation(renderer, camera_args, num_frames=360, fps=120, output_filename=None):
     '''Generates a 360-degree animation of Gaussian splats'''
     fig, ax = plt.subplots()
     
-    initial_c2w = generate_c2w(camera_args.radius, camera_position)
-    
+    initial_c2w = generate_c2w(camera_args.radius, camera_args.position)
+
     camera = MiniCam(
         initial_c2w,
         camera_args.gs_image_width,
