@@ -30,6 +30,16 @@ if __name__ == "__main__":
         "densify_grad_threshold": 0.01
     }
 
+    densification_args = {
+        'densify_and_prune_rate': 50,
+        'opacity_reset_rate': 300,
+        'opacity_reset_threshold': 0.05,
+        "max_grad": 0.0002,
+        "min_opacity": 0.005,
+        "extent": 3,
+        "max_screen_size": None
+    }
+
     anim_camera_args = {
         "radius": 2.5,
         "gs_image_width": 512,
@@ -40,7 +50,6 @@ if __name__ == "__main__":
         "fovx": 2 * np.arctan(np.tan(49 / 2)),
         "position": np.array([0, 0, 5])
     }
-    anim_camera_args = SimpleNamespace(**anim_camera_args)
 
     sd_model_key = "stabilityai/stable-diffusion-2-1-base"
     sd_model = StableDiffusion(device=torch.device("cuda"), sd_model_key=sd_model_key)
@@ -52,7 +61,8 @@ if __name__ == "__main__":
         prompt=prompt,
         num_splats=num_splats,
         training_args=SimpleNamespace(**training_args),
+        densification_args=SimpleNamespace(**densification_args),
         render_resolutions = render_resolutions
     )
 
-    trainer.train(batch_size, epochs, anim_camera_args=anim_camera_args)
+    trainer.train(batch_size, epochs, anim_camera_args=SimpleNamespace(**anim_camera_args))

@@ -8,8 +8,9 @@ from gs.renderer import Renderer
 from utils.gs import generate_cuboid_pcd, generate_gs_360_animation, generate_gs_images, generate_sphere_pcd
 
 class Trainer:
-    def __init__(self, sd_model, prompt, num_splats, training_args, render_resolutions,
-                 negative_prompt="", camera_radius=2.5, fovy=49, znear=0.01, zfar=100, sh_degree=0):
+    def __init__(self, sd_model, prompt, num_splats, training_args, densification_args,
+                 render_resolutions, negative_prompt="", camera_radius=2.5, fovy=49,
+                 znear=0.01, zfar=100, sh_degree=0, densify_and_prune=True):
         # SD model
         self.sd_model = sd_model
         self.sd_model.generate_text_embeddings(prompt, negative_prompt)
@@ -28,12 +29,15 @@ class Trainer:
         self.camera_args = SimpleNamespace(**camera_args)
 
         # Gaussian splats
+        self.densify_and_prune = densify_and_prune
+        self.densification_args = densification_args
         self.renderer = Renderer(sh_degree=sh_degree)
         
         # pcd = generate_cuboid_pcd(num_splats=num_splats, width=0.5, height=1.0, depth=0.5)
         pcd = generate_sphere_pcd(num_splats=num_splats, radius=0.5)
         self.renderer.gaussians.create_from_pcd(pcd)
         self.renderer.gaussians.training_setup(training_args)
+        self.renderer.gaussians.active_sh_degree = self.renderer.gaussians.max_sh_degree
 
         self.optimizer = self.renderer.gaussians.optimizer
 
@@ -56,7 +60,8 @@ class Trainer:
         self.camera_args.gs_image_height = res
 
         # Generate image(s) of the splats
-        images = generate_gs_images(renderer=self.renderer, camera_args=self.camera_args, batch_size=batch_size)
+        outputs = generate_gs_images(renderer=self.renderer, camera_args=self.camera_args, batch_size=batch_size, as_output=True)
+        images = [output["image"].unsqueeze(0) for output in outputs]
 
         # if epoch % 20 == 0:
         #     plt.imshow(images[0].squeeze(0).permute(1, 2, 0).cpu().detach().numpy())
@@ -69,6 +74,24 @@ class Trainer:
         loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
+
+        # Densify/prune
+        if self.densify_and_prune:
+            for output in outputs:
+                viewspace_points, visibility_filter, radii = output["viewspace_points"], output["visibility_filter"], output["radii"]
+                self.renderer.gaussians.max_radii2D[visibility_filter] = torch.max(self.renderer.gaussians.max_radii2D[visibility_filter], radii[visibility_filter])
+                self.renderer.gaussians.add_densification_stats(viewspace_points, visibility_filter)
+
+                if (epoch + 1) % self.densification_args.densify_and_prune_rate == 0:
+                    self.renderer.gaussians.densify_and_prune(
+                        max_grad=self.densification_args.max_grad,
+                        min_opacity=self.densification_args.min_opacity,
+                        extent=self.densification_args.extent,
+                        max_screen_size=self.densification_args.max_screen_size
+                    )
+
+                if (epoch + 1) % self.densification_args.opacity_reset_rate == 0:
+                    self.renderer.gaussians.reset_opacity(threshold=self.densification_args.opacity_reset_threshold)
 
         return loss.item()
 

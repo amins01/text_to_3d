@@ -64,7 +64,7 @@ def generate_sphere_pcd(num_splats, radius):
         points=points, colors=SH2RGB(colors), normals=normals
     )
 
-def generate_gs_images(renderer, camera_args, batch_size=1, ready_to_display=False):
+def generate_gs_images(renderer, camera_args, batch_size=1, ready_to_display=False, as_output=False):
     rendered_images = []
 
     for _ in range(batch_size):
@@ -90,6 +90,8 @@ def generate_gs_images(renderer, camera_args, batch_size=1, ready_to_display=Fal
 
         if ready_to_display:
             rendered_image = rendered_output["image"].permute(1, 2, 0).cpu().detach().numpy()
+        elif as_output:
+            rendered_image = rendered_output
         else:
             rendered_image = rendered_output["image"].unsqueeze(0)
         
