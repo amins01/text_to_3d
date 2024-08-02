@@ -1,7 +1,9 @@
 # Text to 3D (under 2 minutes)
 This repository provides a fast and simple text to 3D generation framework using Gaussian Splatting, based on the [DreamGaussian paper](https://arxiv.org/pdf/2309.16653).
 
-https://github.com/user-attachments/assets/616781a3-a457-4922-a92e-467236ad867c
+https://github.com/user-attachments/assets/9fcabf6e-48ab-4074-a129-e8f33d0554bc
+
+_Prompt: "a photo of an ice cream cone". This video has been sped up for demonstration purposes, but the process originally took around 1 minute and 30 seconds._
 
 ## Qualitative Comparison
 The following section presents a qualitative comparison of our results with the ones of DreamFusion, Shape-E, DreamGaussian:
