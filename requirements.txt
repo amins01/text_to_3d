@@ -1,0 +1,8 @@
+numpy
+pandas
+matplotlib
+torch
+huggingface_hub
+diffusers
+accelerate
+transformers
